@@ -14,7 +14,7 @@ GNUmakefile
 deskhpsdr
 !release/
 !release/deskhpsdr
-deskHPSDR.app
+# deskHPSDR.app  (ara es puja al repo amb les llibreries)
 hpsdrsim
 wdspWisdom*
 *.props
@@ -52,7 +52,7 @@ HL2-Tools/hl2_ip_tool
 Brick-Tools/*.o
 Brick-Tools/p2_discover
 Brick-Tools/p2_tool
-*.zip
+# *.zip  (els zips de release es pengen com a asset)
 MacOS/build-*.sh
 rx200-sim*
 miniaudio/*.txt

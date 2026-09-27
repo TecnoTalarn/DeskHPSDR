@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>org.dl1bz.deskhpsdr</string>
+	<key>CFBundleName</key>
+	<string>deskHPSDR</string>
+	<key>CFBundleDisplayName</key>
+	<string>deskHPSDR</string>
+	<key>CFBundleExecutable</key>
+	<string>deskhpsdr</string>
+	<key>CFBundleIconFile</key>
+	<string>deskhpsdr.icns</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>2.8.4</string>
+	<key>CFBundleVersion</key>
+	<string>20804</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+    <key>CFBundleGetInfoString</key>
+    <string>deskHPSDR: OpenHPSDR Host App for SDR-TRX in Amateur Radio</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (C) 2024-2026 by Heiko Amft, DL1BZ</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>deskHPSDR requires access to audio input devices for microphone and transmit audio.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>deskHPSDR requires access to the local network for discovery and communication with SDR devices via UDP.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>15.0</string>
+</dict>
+</plist>
