@@ -109,6 +109,7 @@ struct desc {
 extern struct desc *MidiCommandsTable[129];  // slot #128 is for the pitch-bend
 
 extern int midiIgnoreCtrlPairs;
+extern int midiInvertWheels;
 
 //
 // Layer-1 entry point, called once for all the MIDI devices

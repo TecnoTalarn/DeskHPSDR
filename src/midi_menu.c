@@ -47,6 +47,7 @@
 #include "message.h"
 
 int midiIgnoreCtrlPairs = 0;
+int midiInvertWheels = 0;
 
 enum {
   EVENT_COLUMN = 0,
@@ -156,6 +157,10 @@ static void destroy_cb(GtkWidget *widget, gpointer data) {
 
 static void ignore_cb(GtkWidget *widget, gpointer data) {
   midiIgnoreCtrlPairs = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
+}
+
+static void invert_wheels_cb(GtkWidget *widget, gpointer data) {
+  midiInvertWheels = gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget));
 }
 
 static void device_cb(GtkWidget *widget, gpointer data) {
@@ -673,6 +678,12 @@ void midi_menu(GtkWidget *parent) {
   gtk_grid_attach(GTK_GRID(grid), ignore_b, 3, row, 3, 1);
   g_signal_connect(ignore_b, "toggled", G_CALLBACK(ignore_cb), NULL);
   row++;
+  GtkWidget *invert_b = gtk_check_button_new_with_label("Invert Wheel Direction");
+  gtk_widget_set_name(invert_b, "boldlabel");
+  gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(invert_b), midiInvertWheels);
+  gtk_grid_attach(GTK_GRID(grid), invert_b, 0, row, 3, 1);
+  g_signal_connect(invert_b, "toggled", G_CALLBACK(invert_wheels_cb), NULL);
+  row++;
   col = 0;
   scrolled_window = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
@@ -1095,6 +1106,7 @@ void midiSaveState(void) {
   int i;
   entry = 0;
   SetPropI0("midiIgnoreCtrlPairs", midiIgnoreCtrlPairs);
+  SetPropI0("midiInvertWheels", midiInvertWheels);
   for (i = 0; i < MAX_MIDI_DEVICES; i++) {
     SetPropS1("mididevice[%d].name", i, "NO_MIDI_DEVICE_FOUND");
   }
@@ -1158,6 +1170,7 @@ void midiRestoreState(void) {
   MidiReleaseCommands();
   //t_print("%s\n",__func__);
   GetPropI0("midiIgnoreCtrlPairs", midiIgnoreCtrlPairs);
+  GetPropI0("midiInvertWheels", midiInvertWheels);
   //
   // Note this is too early to open the MIDI devices, since the
   // radio has not yet fully been configured. Therefore, only
