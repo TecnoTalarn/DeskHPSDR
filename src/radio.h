@@ -390,6 +390,18 @@ extern gboolean display_pacurr;
 #define HL2_CODEC_SQUARESDR2 2   // SQUARE SDR 2: dither bit = internal speaker ON/OFF
 
 extern int hl2_audio_codec;
+//
+// If set, TX monitor audio is also sent to the SDR hardware audio path
+// (network port 1028) in addition to the local host audio backend.
+//
+#define HL2_MONITOR_TO_HW_OFF 0
+extern int hl2_monitor_to_hardware;
+//
+// If set, the TX monitor taps the raw microphone sample before the WDSP TX
+// chain, removing the DSP block/pipeline delay (~200 ms) from the monitor.
+//
+#define HL2_MONITOR_LOW_LATENCY_OFF 0
+extern int hl2_monitor_low_latency;
 extern int hl2_cl1_input;
 extern int anan10E;
 extern int hermes_mode;

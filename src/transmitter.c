@@ -1555,7 +1555,63 @@ int tx_monitor_audio_active(void) {
   return 1;
 }
 
+//
+// Send a monitor sample both to the local (Mac) audio backend and, when a
+// network protocol is in use, to the SDR hardware audio path (port 1028 for
+// P2 / AUDIO_FROM_HOST_PORT), so the TX monitor can also be heard on the
+// hardware's own headphones/codec output.
+//
+static void tx_monitor_write(TRANSMITTER *tx, float left, float right) {
+  audio_write_monitor(active_receiver, left, right);
+  if (!hl2_monitor_to_hardware) {
+    return;
+  }
+  if (left >  1.0f) { left =  1.0f; }
+  if (left < -1.0f) { left = -1.0f; }
+  if (right >  1.0f) { right =  1.0f; }
+  if (right < -1.0f) { right = -1.0f; }
+  short left_audio_sample  = (short)(left  * 32767.0f);
+  short right_audio_sample = (short)(right * 32767.0f);
+  switch (protocol) {
+  case ORIGINAL_PROTOCOL:
+    old_protocol_audio_samples(left_audio_sample, right_audio_sample);
+    break;
+  case NEW_PROTOCOL:
+    new_protocol_audio_samples(left_audio_sample, right_audio_sample);
+    break;
+  }
+}
+
+//
+// Low-latency TX monitor: send the raw microphone sample straight to the
+// audio output(s), bypassing the WDSP TX chain entirely. This avoids the
+// block-based DSP latency (buffer_size up to 1024 samples plus pipeline
+// delay) that makes the normal monitor feel ~200 ms late.
+//
+// Called from tx_add_mic_sample(), i.e. once per incoming microphone sample.
+//
+static void tx_monitor_low_latency(TRANSMITTER *tx, float mic_sample, int txmode) {
+  if (atomic_load_explicit(&tx_monitor_post, memory_order_relaxed) ||
+      !tx_monitor_allowed(tx, txmode)) {
+    return;
+  }
+  // Mic PreAmp is already applied by the caller. Mic Gain is the WDSP
+  // PanelGain in the real TX path; mirror it here so the monitor level
+  // matches what is transmitted. DIGL/DIGU and captured/voice-keyer TX use
+  // 0 dB PanelGain in the real path and must do so here too.
+  double monitor_gain = atomic_load_explicit(&tx_monitor_gain, memory_order_relaxed);
+  double panel_gain = (txmode == modeDIGL || txmode == modeDIGU ||
+                       capture_state == CAP_XMIT || capture_state == CAP_XMIT_DONE)
+                      ? 1.0
+                      : pow(10.0, tx->mic_gain * 0.05);
+  float sample = (float)(monitor_gain * panel_gain * mic_sample);
+  tx_monitor_write(tx, sample, sample);
+}
+
 static void tx_monitor_pre_input(TRANSMITTER *tx, int txmode) {
+  if (hl2_monitor_low_latency) {
+    return;
+  }
   if (atomic_load_explicit(&tx_monitor_post, memory_order_relaxed) ||
       !tx_monitor_allowed(tx, txmode)) {
     return;
@@ -1571,7 +1627,7 @@ static void tx_monitor_pre_input(TRANSMITTER *tx, int txmode) {
                       : pow(10.0, tx->mic_gain * 0.05);
   for (int i = 0; i < tx->samples; i++) {
     double sample = monitor_gain * panel_gain * tx->mic_input_buffer[2 * i];
-    audio_write_monitor(active_receiver, sample, sample);
+    tx_monitor_write(tx, (float) sample, (float) sample);
   }
 }
 
@@ -1587,9 +1643,9 @@ static void tx_monitor_processed_output(TRANSMITTER *tx, int txmode) {
   }
   if (tx->iq_output_rate == 48000) {
     for (int i = 0; i < tx->output_samples; i++) {
-      audio_write_monitor(active_receiver,
-                          monitor_gain * tx->monitor_input_i[i],
-                          monitor_gain * tx->monitor_input_q[i]);
+      tx_monitor_write(tx,
+                       (float)(monitor_gain * tx->monitor_input_i[i]),
+                       (float)(monitor_gain * tx->monitor_input_q[i]));
     }
     return;
   }
@@ -1604,9 +1660,9 @@ static void tx_monitor_processed_output(TRANSMITTER *tx, int txmode) {
               &out_q, tx->monitor_resampler_q);
   int frames = min(out_i, out_q);
   for (int i = 0; i < frames; i++) {
-    audio_write_monitor(active_receiver,
-                        monitor_gain * tx->monitor_output_i[i],
-                        monitor_gain * tx->monitor_output_q[i]);
+    tx_monitor_write(tx,
+                     (float)(monitor_gain * tx->monitor_output_i[i]),
+                     (float)(monitor_gain * tx->monitor_output_q[i]));
   }
 }
 
@@ -1911,6 +1967,13 @@ void tx_add_mic_sample(TRANSMITTER *tx, float mic_sample) {
   //
   if (tx->addgain_enable && txmode != modeDIGL && txmode != modeDIGU) {
     mic_sample_double *= pow(10.0, tx->addgain_gain * 0.05);
+  }
+  //
+  // Low-latency monitor: forward the raw mic sample immediately, before the
+  // WDSP TX chain adds its block/pipeline delay.
+  //
+  if (hl2_monitor_low_latency) {
+    tx_monitor_low_latency(tx, (float) mic_sample_double, txmode);
   }
   tci_get_next_mic_sample(&mic_sample_double);
   //
