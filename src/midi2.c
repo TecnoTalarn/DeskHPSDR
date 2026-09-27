@@ -102,7 +102,10 @@ void NewMidiEvent(enum MIDIevent event, int channel, int note, int val) {
           //                               __func__,
           //                               val, new, desc->vfl1, desc->vfl2, desc->fl1, desc->fl2, desc->lft1, desc->lft2,
           //                               desc->rgt1, desc->rgt2, desc->fr1, desc->fr2, desc->vfr1, desc->vfr2);
-          if (new != 0) { DoTheMidi(desc->action, desc->type, new); }
+          if (new != 0) {
+            if (midiInvertWheels) { new = -new; }
+            DoTheMidi(desc->action, desc->type, new);
+          }
         }
         break;
       case MIDI_PITCH:
