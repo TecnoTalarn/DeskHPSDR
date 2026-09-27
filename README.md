@@ -1,216 +1,129 @@
-# deskHPSDR by DL1BZ for OpenHPSDR protocol 1 & 2
+# DeskHPSDR — TecnoTalarn variant
 
-deskHPSDR by DL1BZ is an mature Open Source desktop application for Hamradio OpenHPSDR SDR transceivers that has been under active development for years. SDR devices based on the OpenHPSDR protocol P1 or P2 are fully supported and both protocol versions are fully supported. It is designed and built as an advanced SDR transceiver front-end application for macOS, Linux and WINDOWS for "every-day-use" and runs now extremely stable and reliable. deskHPSDR is largely based on the WDSP software library by Warren C. Pratt (NR0V), similar to other SDR applications like Thetis for WINDOWS.
+> **This is a personal variant (fork) of [deskHPSDR by DL1BZ](https://github.com/dl1bz/deskhpsdr).**
+> All credit for the original application goes to **DL1BZ** and the WDSP authors.
+> This fork exists only to try a few user-experience improvements for the
+> **Brick2 / Brick3** SDR series, and is not affiliated with the upstream project.
 
-<img src="stuff/deskhpsdr/screenshot.png" width="1024px" />
+## Why this fork exists
 
-## deskHPSDR ≠ pihpsdr: new app, revised concept, new name
+We run deskHPSDR on macOS with a **Brick2** transceiver over OpenHPSDR protocol 2.
+Two things bothered us in daily use:
 
-The very first codebase of deskHPSDR was forked ONCE from [DL1YCF's pihpsdr codebase](https://github.com/dl1ycf/pihpsdr) in October 2024 without any backward dependencies to pihpsdr.<br>
-A large part of the old pihpsdr code is rewritten now and/or replaced with my new own code. That means, today deskHPSDR can no longer be described as a fork of pihpsdr. The "pi" was removed from the app's name consciously, the reason why is explained later.
+1. The **TX audio monitor** could only ever be heard on the computer's own
+   speakers — never on the Brick's own headphones, which is where you actually
+   want it when operating.
+2. Once we fixed that, the monitor turned out to be **very late** (~200 ms).
+   That much delay makes monitoring your own voice on headphones unpleasant and
+   nearly useless for checking how you sound.
 
-## The concept behind - what it's make for and what it isn't for
+This fork attacks both, plus one small MIDI annoyance.
 
-My goal was to make an more optimzed version running with focus on Desktop-OS like Linux and macOS, what means I don't support small displays less as 1280x600.<br>
-⚠️☝️ Single-board computers such as the Raspberry Pi and similar platforms are not within the scope of deskHPSDR development. Hardware-specific features such as GPIO are not available on standard desktop systems. Therefore, I don't want to add functionality that is only usable by a small subset of users. My goal is to keep the application focused on features that are available and useful across all supported desktop platforms. That means there will be no exceptions.
+---
 
-**deskHPSDR is a dedicated SDR transceiver frontend application using OpenHPSDR protocols 1 or 2 for everyday use in amateur radio. Soapy SDR and GPIO code and support is official REMOVED now.**
+## Changes in this fork
 
+Three commits, one per feature, on top of upstream `470d605`:
 
-| Feature                        | Current deskHPSDR version 2.8                 | Notes             |
-| -------------------------------- | ----------------------------------------------- | ------------------- |
-| TCI CAT                        | supported ✅                                  | TCI 2.0           |
-| TCI Audio                      | supported (only 48k and 24k) ✅               | TCI 2.0           |
-| TCI I/Q                        | supported (48k/96k/192k/384k) ✅              | TCI 2.0           |
-| PTT external                   | supported (via serial RTS/CTS or MIDI) ✅     |                   |
-| MIDI Control                   | supported using RTmidi library ✅             |                   |
-| Hamlib                         | supported (with own included rigctld) ✅      |                   |
-| CW                             | supported ✅                                  | via MIDI & TCI    |
-| OpenHPSDR protocol 1           | supported ✅                                  |                   |
-| OpenHPSDR protocol 2           | supported ✅                                  |                   |
-| GPIO                           | GPIO code removed since V2.7 ❌               |                   |
-| Soapy API / Soapy protocol     | Soapy code removed since V2.7 ❌              |                   |
-| Hermes Lite 2 N2ADR IO board   | supported ✅                                  |                   |
-| Use WDSP library ?             | yes, current 2.10 ✅                          |                   |
-| Pure Signal / Pre-Distortion   | supported up to 192k samplingrate ✅          |                   |
-| Noise Reduction                | NR1 - NR4 + NNR available ✅                  | NNR high CPU load |
-| CAT over TCP                   | supported (TS2000 & PowerSDR emulation) ✅    |                   |
-| integrated Client-Server Mode  | not supported ❌                              | will never come.  |
-| IF Mode / Panadapter mode      | not supported ❌                              | will never come.  |
-| Hermes Lite 2+ expansion board | supported ✅                                  |                   |
-| Bright / Dark Theme support    | yes ✅                                        |                   |
-| Screen Resolution              | min. 1280x600 or higher 🚨                    |                   |
-| Input devices                  | Touchscreen, Mouse, Keyboard, MIDI            |                   |
-| OS support (64bit OS required) | macOS (15 or higher) ✅, Linux ✅, WINDOWS ✅ |                   |
-| using Virtual Environments (VE)| not supported ❌                              | use native OS     |
-| Audio backend                  | CoreAudio (macOS), miniAudio (macOS,Linux,Win)|                   |
-| Audio devices support          | mono,stereo (only 48kHz audio rate supported) | no resampling     |
-| TX Audio Monitor               | supported ✅ (since 2.7.39)                   | Pre & Post        |
-| DX Cluster support             | yes, inclusive show Spots on RX Panadapter ✅ |                   |
-| RBN support                    | yes, inclusive show Spots on RX Panadapter ✅ |                   |
-| SDR TX support                 | yes, fully supported ✅                       |                   |
-| Used UI framework              | GTK3                                          |                   |
-| Programming language           | C, partially Objective C/Swift (macOS only)   |                   |
-| Supported Compiler             | clang (recommended), gcc                      |                   |
+### 1. TX monitor also goes to the SDR hardware audio path
+`9c69303` — *TX monitor: also send monitor audio to the SDR hardware audio path*
 
-Other useful app features (availability depend from used SDR device):
+The monitor was only written to the local host backend
+(`audio_write_monitor()`), so it could only be heard on the Mac's speakers. The
+hardware audio path (network **port 1028** / `AUDIO_FROM_HOST_PORT` for P2) is a
+completely separate route that is fed only from the RX chain.
 
-* Noisefloor adjustment automatic for Panadapter ✅
-* SDR device auto-detection ✅
-* Autogain adjustment and ADC overflow protection (Hermes Lite 2 only) ✅
-* Keyboard shortcuts (pre-defined) ✅
-* Open Collector support (RX, TX, Tune) via OpenHPSDR protocol ✅
-* Antenna selection (if SDR support this) ✅
-* Transverter Support ✅
-* External PTT support (e.g. footswitch) via MIDI or Serial port (RTS/CTS) if available ✅
-* Full RX- and TX-WDSP Audio chain support (RX/TX-EQ, Leveler, CESSB, Limiter, CFC, Speech Processor, DEXP) ✅
-* network optimizations if using WiFi for OpenHPSDR protocol P1 or P2 ✅
-* 2 VFO, up to 2 Receiver and 1 Transmitter
-* VFO split, swap, RIT/XIT supported ✅
-* Save TX DRIVE and TUNE DRIVE per band, Bandstack available
-* verified Digimode app compatibility: WSJT-X PLUS Improved, JTDX, JS8CALL, WSJT-Z, MSHV, cwTCI, rttyTCI ✅
-* verified Log app compatibility: RumLogNG (using TCI) ✅
-* options for display current solar data for propagation and Greyline DX window ✅
-* Panadapter refresh rate adjustment (max. 60fps, prevent very high CPU consumption❗)
-* 3D history waterfall (higher CPU consumption +10%❗)
-* some special SDR device-specific options supported 🔥
+A new `tx_monitor_write()` writes the monitor sample to **both** paths: the local
+backend as before, plus the hardware audio path when the new
+**“HL2 TX Monitor to hardware”** option is enabled. All three monitor call sites
+now go through it.
 
-The app focus is fonie/SSB & digimodes, less CW. deskHPSDR has more added options integraded from the WDSP library like pihpsdr, especially tools for the WDSP RX and TX audio chain, and they are all user-acessible and user-adjustable (pihpsdr has many things only "hardcoded" without user-access). deskHPSDR support **max. two RX and one TX**, although some SDR hardware supports more, like the Hermes Lite 2 with up to four RX slices.
+*Off by default. Persisted as `hl2_monitor_to_hardware`.*
 
-⚠️☝️ deskHPSDR **is not made** as a "measurement tool" or for other, very special purposes where SDR devices are used (e.g. SDR Lab, IF-tap, IF-/Panadapter-Mode). There are other, more specialized apps for such cases - use these for your special purposes. It's - not more, not less - a SDR transceiver GUI frontend for use in hamradio which will be actively and continuously developed. All things outside the hamradio universe are generally not supported by this app. The support for commercial SDR products is very limited, because I don't accept and reject any kind of NDA aka "Non-Disclosure Agreement" for development deskHPSDR and it's SDR device support.<br>
-deskHPSDR is fully Open Source, but a full non-commercial hobby software project by DL1BZ, which can be used completely free without any kind of payments, but with full respect of all copyrights around the app deskHPSDR.
+### 2. Low-latency TX monitor
+`4511dce` — *TX monitor: add low-latency mode tapping the raw microphone sample*
 
-**deskHPSDR need a screen size 1280x600 at minimum or higher** for best GUI experiences, that's one of the difference against piHPSDR. deskHPSDR hasn't a special Client-Server-Mode like pihpsdr (make no sense, we HAVE network-connected SDR devices yet).
+The normal monitor is fed from `tx_full_buffer()`, which works on **WDSP blocks of
+up to 1024 samples** and runs the whole TX chain. That block and pipeline delay is
+what makes the operator hear their own voice roughly 200 ms late.
 
-My main focus of deskHPSDR development is macOS, which is my primary development environment for deskHPSDR. Normally all should be running with Linux too. The second focus is Fonie/SSB/Digimodes and less CW. This SDR software app is made for SDR transceiver used in Hamradio as daily-used app, but not for special operations with wide-range RX-only SDR devices. If you agree with me and my ideas, deskHPSDR can be very useful for you. If not, look around for other solutions.
+An optional low-latency mode taps the microphone sample in `tx_add_mic_sample()`,
+i.e. **once per incoming sample, before any DSP**. The monitor level still mirrors
+the real TX path (monitor gain × the WDSP PanelGain, with 0 dB for DIGL/DIGU and
+captured/voice-keyer TX), so you hear the same level that is transmitted.
 
-## Requirements
+Two more buffers had to come out of the monitor path for this to actually pay off:
 
-I recommend using deskHPSDR on macOS, it's also being focused and developed on this OS platform. It can be build and run under Linux too, but my recommendation remains unequivocally macOS for for stable and stress-free operation with deskHPSDR. macOS will also remain the only platform, where I provide ready-made app bundles without build them first.
+* **`buffered_audio.c`** — `audio_write_internal()` padded the local ring with
+  silence up to `RX_LAT_TARGET` (1536 samples, **~32 ms**) whenever it ran low.
+  Right for RX continuity, pure added delay for the monitor. `audio_write_monitor()`
+  now passes `is_monitor` and skips it.
+* **`new_protocol.c`** — the port 1028 ring carries RX audio, and on the RX→TX
+  transition it was **never drained** (the drain existed only for CW). Monitor
+  samples were therefore queued behind up to **~85 ms** of RX backlog. The backlog
+  is now dropped on the RX→TX transition when the low-latency monitor is active.
 
-* modern Desktop-OS like macOS (15 or newer) or Linux with installed developer tools like compiler, linker etc.
-* minimum screensize starts from 1280x600
-* **basic knowledge**: how to use your OS, a shell, a text editor and how to compile applications from source code
-* *macOS only*: please read the``COMPILE.macOS`` first, ready-to-run app bundles for ARM & Intel available (digitally signed and notarized)
-* *Linux only*: please read the``COMPILE.linux`` first
-* *WINDOWS only*: complex build process, nothing for normal users, WINDOWS version published as setup package instead
-* a SDR device or SDR transceiver, which supports HPSDR protocol 1 (older) like the Hermes Lite 2 or protocol 2 (newer) like the ANAN or similiar devices like Brick2/Brick3 series.
-* a very good running network without any issues (Ethernet preferred, WiFi not recommended) and a DHCP server inside (without DHCP is possible too, but more complicated or difficult working with the SDR devices)
-* for Hermes Lite 2 specific notes look into the``Notes_if_using_HERMES-Lite-2.md``
-* if want using a Raspberry Pi: Revision 5 (aka "Pi5") with >= 8GB RAM is strongly recommended, but deskHPSDR is not optimized for such SoC. Older 32bit OS for Raspberry Pi are not supported, the code is designed for 64bit environments
-* ⚠️ running deskHPSDR inside Virtual Environments (VE) is not supported, use ever native hardware for running deskHPSDR
+*Off by default. Persisted as `hl2_monitor_low_latency`.*
 
-## I want use now deskHPSDR. What I need to do ?
+**Trade-off:** the monitor then carries the **unprocessed** microphone signal — no
+equalizer, no filter, no ALC. That is the price of the latency.
 
-deskHPSDR is published exclusively as source code only (except macOS, meanwhile are ready-made app bundles available, look into [releases](https://github.com/dl1bz/deskhpsdr/releases) ). You need to clone this Github repository and compile the app before you can use it. Please read all included instructions carefully to avoid installation errors by yourself. Additional notes you can find too under the discussion tab of this project. Please have a look there too from time to time.<br>
-I will never publish any ready-compiled binaries or appimages for Linux. The task of compiling it yourself remains.
+### 3. MIDI: invert wheel direction
+`e2a741e` — *MIDI: add option to invert wheel direction*
 
-## My development of deskHPSDR
+Some MIDI controllers report their modulation and pitch wheels with the opposite
+polarity to what the operator expects. An **“Invert Wheel Direction”** checkbox in
+the MIDI menu negates the wheel value before it is dispatched.
 
-deskHPSDR is under my active development, because software projects never finished.😉<br>
-My guiding principle is to adapt most of the core functions from [Thetis](https://github.com/mi0bot/OpenHPSDR-Thetis) to deskHPSDR, but without the surrounding playground. What I mean is, it will never be like Thetis, but we will get as close as we can.<br>
-⚠️☝️ I'm the solo maintainer of this project deskHPSDR, there is no developer team behind. This app is MY OWN interpretation how such an SDR TRX app should work. I alone make all the design decisions, no one else. During publishing this app as Open Source, I'm ready to share my own work and development with interested users or interested communities. However, this does not give rise to any demands or claims for anyone, but I'm open for useful user requests. That doesn't mean, that I accept every request.
+*Off by default. Persisted as `midiInvertWheels`.*
 
-## Management of user requests - read first before make a user request
+---
 
-I only accept user requests, if they
-a) fit the concept and
-b) are useful to everyone.
-I decline requests for "only one user" functions and regarding the following questions:
-- provide ready-to-run binaries for Linux (regardless of the form) -> NO
-- supporting SDR devices, which don't work with OpenHPSDR protcols P1 or P2 -> NO
-- add any kind of additonal build-in or special client-server-support like pihpsdr -> NO
-- help for solving OS problems, if these in my assessment do not directly concern deskHPSDR
+## Honest status of the latency work
 
-Especially Linux environments are highly fragmented and differ from distribution to distribution, so I cannot guarantee that deskHPSDR will run on just any Linux distribution. I test only and exclusively Debian-based environments - but I’m not interested in anything else.
+We removed roughly **117 ms** of buffering on the deskHPSDR side:
 
-## macOS is first choice
+| Stage | Before | After |
+| --- | --- | --- |
+| Microphone packet (P2, 64 samples) | 1.33 ms | 1.33 ms |
+| Low-latency tap (pre-DSP) | — | ~0 ms |
+| Port 1028 ring (RX backlog) | ~85 ms | 0 ms |
+| Local Mac ring (silence fill) | ~32 ms | 0 ms |
+| **Known total** | **~118 ms** | **~2.7 ms** |
 
-deskHPSDR is primarily developed for and under macOS. Made as an cross-platform app, it runs on Linux, but Linux is and will be not a priority. WINDOWS version also available.
+**However:** even after all of this, the monitor **still sounds noticeably late on
+the Brick's headphones**, and it is still annoying to listen to. The remaining
+delay is therefore **not** in deskHPSDR — every buffer we could find on the host
+side has been removed.
 
-## Latest Changes
+The remaining suspect is the **Brick gateware**, most likely its internal DAC FIFO.
+That is outside this repository and needs the Brick developer's input.
 
-**CHANGES are located in the [Discussions tab, category CHANGELOG deskhpsdr](https://github.com/dl1bz/deskhpsdr/discussions/categories/changelog-deskhpsdr).**
+We are publishing this fork mainly so that work is not lost and so others hitting
+the same problem can see what has already been tried and ruled out.
 
-### Version 2.6.x (previous version, EOL May 2026)
+---
 
-On March 4, 2025 the **first final version 2.6 of deskHPSDR** was published.<br>
-With publishing first new main version 2.7 in May 2026 all support for versions < 2.7.x were closed inclusive older versions with SoapySDR and GPIO support.
+## Building
 
-### Version 2.7.x (previous version, EOL mid of September 2026)
+The build procedure is unchanged from upstream. See `COMPILE.macOS` for macOS,
+and the upstream repository for Linux and Windows instructions.
 
-First version 2.7 was published in May 2026.<br>
-
-### Version 2.8.x (current version)
-
-Current development start from version 2.8 in September 2026.<br>
-
-Most of the new functions need to be activated in the ``make.config.deskhpsdr`` as compiling option. Please look in the beginning of the  ``Makefile`` and set the needed options only in ``make.config.deskhpsdr``, but don't modify the ``Makefile`` itself !
-
-## Support: Issues and Discussion tab at Github for this project - read carefully !
-
-- the **Issues tab is only for reporting issues, bugs or malfunctions of this app** !
-- for all other things please use necessarily the [discussions tab](https://github.com/dl1bz/deskhpsdr/discussions/categories/changelog-deskhpsdr)
-
-Please note: My development focus is only macOS. Linux is of no interest to me. Yes, this app can run with Linux too, that's a result of how this app is programmed based on C program language. However, that does not mean I provide any kind of support for Linux. From time to time, I test whether the app can be built on Linux and whether it runs. If it does that successfully, the topic Linux is closed for me at this point. Read carefully my instructions for build with Linux in document ``COMPILE.linux``.
-
-## Known problems if using Git for update the code base at your local computer
-
-From time to time I need rebase the deskHPSDR repository. This can break using ``git pull`` for update deskHPSDR.<br>
-Please make sure you set:<br>
-
-```
-$ git config pull.rebase true
+```sh
+make -j8
 ```
 
-In the ``Makefile`` I add a comment "don't edit this Makefile". That's I mean so. I'm now add the editable, additional file for this called ``make.config.deskhpsdr``.<br>
+On macOS, `make` picks up Homebrew FFTW and libwebsockets automatically.
 
-If ``git pull`` failed, you can try this:<br>
+---
 
-```
-$ git pull --all
-$ git reset --hard origin/master
-$ git pull --all
-```
+## Credits and licence
 
-This overwrite ALL local changes you are made, which are different from my current repo at Github.com and set the status equal between local and remote.
+* Original application: **deskHPSDR by DL1BZ** — https://github.com/dl1bz/deskhpsdr
+* DSP library: **WDSP by Warren C. Pratt (NR0V)**
+* Brick SDR series: **Anton**, for the technical documentation that made Brick
+  support possible
+* The upstream project was itself forked once from
+  [DL1YCF's pihpsdr codebase](https://github.com/dl1ycf/pihpsdr) in October 2024.
 
-**If this not help, please delete the complete codebase of deskHPSDR and clone it again, then you have a fresh current copy.**<br>
-
-## deskHPSDR software quality management & platform testing
-
-So far, deskHPSDR has been successfully tested on the following systems:<br>
-
-* Macbook Air M1 running macOS 26 aka Tahoe
-* Mac mini M4 2024 running macOS 26 aka Tahoe
-* old Macbook Pro i7 & LENOVO Desktop PC running Linux Mint "Faye" Debian-Edition
-* Raspberry Pi5 & CM5 with NVMe SSD running current official 64bit PiOS ("Trixie") and X11 environment (no Wayland!)
-
-**All radio tests are made with my Hermes Lite 2 SDR-Transceiver using OpenHPSDR protocol P1 and**
-**my Brick2 14bit SDR transceiver with P2 OpenHPSDR protocol under macOS 26.**
-**It is not possible for me to check ALL types of OpenHPSDR SDR devices.**
-
-## Credits
-
-Big thanks and huge respect to all involved developers for their work on pihpsdr and make the application accessible as Open Source under the GPL. Many thanks also to the users who gave me feedback and reported issues which I hadn't noticed by myself.<br>
-Special thanks to:<br>
-
-- my lovely wife any my family for her great patience and understanding
-- John/G0ORX, Steve/KA6S & Jae/K5JAE and all those involved for initial pihpsdr development
-- Christoph/DL1YCF for continue development and current pihpsdr
-- Dr. Warren C. Pratt NR0V for the great software library WDSP, the "heart" of our deskHPSDR application
-- Anton (developer of Brick SDR series) for share his technical documentations with me for add Brick SDR support
-- OpenAI/ChatGPT for brainstorming, code optimizations and save me a lot of time in development
-- all of the active users and contributors for support deskHPSDR
-
-## Exclusion of any Guarantee and any Warrenty and limited Support
-
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.<br>
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.<br>
-
-All what you do with this code is at your very own risk. The code is published "as it is" without right of any kind of support or similiar services.<br>
-This project is not affiliated with or endorsed by Apache Labs, FlexRadio Systems, ramdor/Thetis, mi0bot/Thetis or the OpenHPSDR project.
-deskHPSDR is also in no way connected to the current pihpsdr development. Both are independent developments with different concepts and goals.
-
-**There are no rights or obligations to get any kind of user support for deskHPSDR from me, I publish only the app source code "as it is".**
+The licence of the original project applies to this fork.
