@@ -1144,7 +1144,7 @@ void audio_reprime_output(RECEIVER *rx) {
 // So mutex locking/unlocking should only cost few CPU cycles in
 // normal operation.
 //
-static int audio_write_internal(RECEIVER *rx, float left, float right, int ignore_mute) {
+static int audio_write_internal(RECEIVER *rx, float left, float right, int ignore_mute, int is_monitor) {
   if (atomic_load_explicit(&rx->audio_test_active, memory_order_acquire)) {
     return 0;
   }
@@ -1169,7 +1169,8 @@ static int audio_write_internal(RECEIVER *rx, float left, float right, int ignor
     int rx_lat_low;
     int rx_lat_target;
     rx_audio_latency_limits(&rx_lat_low, &rx_lat_target);
-    if (g_atomic_int_get(&audio_rx_latency_correction_enabled) &&
+    if (!is_monitor &&
+        g_atomic_int_get(&audio_rx_latency_correction_enabled) &&
         avail < rx_lat_low) {
       if (rx->id >= 0 && rx->id < 8) {
         diag_low_corrections[rx->id]++;
@@ -1268,11 +1269,14 @@ static int audio_write_internal(RECEIVER *rx, float left, float right, int ignor
 // Thus we have an active latency management.
 //
 int audio_write(RECEIVER *rx, float left, float right) {
-  return audio_write_internal(rx, left, right, 0);
+  return audio_write_internal(rx, left, right, 0, 0);
 }
 
 int audio_write_monitor(RECEIVER *rx, float left, float right) {
-  return audio_write_internal(rx, left, right, 1);
+  // The TX monitor must not be padded up to RX_LAT_TARGET: that silence
+  // fill adds ~32 ms of delay to the monitor path.  The monitor is fed
+  // sample-by-sample from the microphone, so let it drain naturally.
+  return audio_write_internal(rx, left, right, 1, 1);
 }
 
 int cw_audio_write(RECEIVER *rx, float sample) {
