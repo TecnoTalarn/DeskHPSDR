@@ -233,6 +233,7 @@ static volatile int rxaudio_outptr    = 0;  // pointer updated when reading from
 static volatile int rxaudio_count     = 0;  // number of samples queued since last sem_post
 static volatile int rxaudio_drain     = 0;  // a flag for draining the RX audio buffer
 static volatile int rxaudio_flag      = 0;  // 0: RX, 1: TX
+static volatile int rxaudio_tx_prev   = 0;  // previous radio_is_transmitting() state
 
 static pthread_mutex_t send_rxaudio_mutex   = PTHREAD_MUTEX_INITIALIZER;
 
@@ -2511,6 +2512,7 @@ void new_protocol_menu_start(void) {
   pthread_mutex_lock(&send_rxaudio_mutex);
   rxaudio_inptr = 0;
   rxaudio_outptr = 0;
+  rxaudio_tx_prev = 0;
   rxaudio_count = 0;
   rxaudio_drain = 0;
   rxaudio_flag = 0;
@@ -3657,6 +3659,21 @@ void new_protocol_audio_samples(short left_audio_sample, short right_audio_sampl
     // much when RX-ing.
     //
     rxaudio_flag = 0;
+  }
+  //
+  // Low-latency TX monitor: on the RX->TX transition, drop whatever RX
+  // audio is still queued in the host ring.  Otherwise the monitor samples
+  // are appended behind that backlog (up to ~85 ms, the catch_up threshold)
+  // and the operator hears their own voice that much later.  The monitor
+  // does not care about RX continuity, so discarding the backlog is safe.
+  //
+  {
+    int tx_now = radio_is_transmitting() ? 1 : 0;
+    if (tx_now && !rxaudio_tx_prev && hl2_monitor_low_latency) {
+      rxaudio_outptr = rxaudio_inptr;
+      rxaudio_count  = 0;
+    }
+    rxaudio_tx_prev = tx_now;
   }
   int iptr = rxaudio_inptr + 4 * rxaudio_count;
   RXAUDIORINGBUF[iptr++] = (left_audio_sample  >> 8) & 0xFF;
