@@ -986,6 +986,19 @@ void radio_menu(GtkWidget *parent) {
       gtk_grid_attach(GTK_GRID(grid), ChkBtn, col, row, 1, 1);
       g_signal_connect(ChkBtn, "toggled", G_CALLBACK(toggle_cb), &hl2_cl1_input);
       row++;
+      ChkBtn = gtk_check_button_new_with_label("HL2 TX Monitor to hardware");
+      gtk_widget_set_name(ChkBtn, "boldlabel");
+      gtk_widget_set_tooltip_text(ChkBtn,
+                                  "Send the TX monitor audio also to the SDR hardware\n"
+                                  "audio path (network port 1028), in addition to the\n"
+                                  "local host audio output.\n\n"
+                                  "Use this to hear the TX monitor on the hardware's\n"
+                                  "own headphones/codec output.\n\n"
+                                  "Default setting: OFF");
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ChkBtn), hl2_monitor_to_hardware);
+      gtk_grid_attach(GTK_GRID(grid), ChkBtn, col, row, 1, 1);
+      g_signal_connect(ChkBtn, "toggled", G_CALLBACK(toggle_cb), &hl2_monitor_to_hardware);
+      col++;
       ChkBtn = gtk_check_button_new_with_label("HL2 ATU TUNE support");
       gtk_widget_set_name(ChkBtn, "boldlabel_blue");
       gtk_widget_set_tooltip_text(ChkBtn,
@@ -1015,6 +1028,37 @@ void radio_menu(GtkWidget *parent) {
     gtk_grid_attach(GTK_GRID(grid), hermes_combo, col, row, 1, 1);
     g_signal_connect(hermes_combo, "changed", G_CALLBACK(hermes_mode_cb), NULL);
     col++;
+    if (hermes_mode == HERMES_MODE_BRICK) {
+      row++;
+      col = 0;
+      ChkBtn = gtk_check_button_new_with_label("HL2 TX Monitor to hardware");
+      gtk_widget_set_name(ChkBtn, "boldlabel");
+      gtk_widget_set_tooltip_text(ChkBtn,
+                                  "Send the TX monitor audio also to the SDR hardware\n"
+                                  "audio path (network port 1028), in addition to the\n"
+                                  "local host audio output.\n\n"
+                                  "Use this to hear the TX monitor on the hardware's\n"
+                                  "own headphones/codec output.\n\n"
+                                  "Default setting: OFF");
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ChkBtn), hl2_monitor_to_hardware);
+      gtk_grid_attach(GTK_GRID(grid), ChkBtn, col, row, 1, 1);
+      g_signal_connect(ChkBtn, "toggled", G_CALLBACK(toggle_cb), &hl2_monitor_to_hardware);
+      col++;
+      ChkBtn = gtk_check_button_new_with_label("HL2 TX Monitor low latency");
+      gtk_widget_set_name(ChkBtn, "boldlabel");
+      gtk_widget_set_tooltip_text(ChkBtn,
+                                  "Tap the raw microphone sample before the WDSP TX\n"
+                                  "chain, instead of the block-based monitor.\n\n"
+                                  "This removes the DSP block/pipeline delay\n"
+                                  "(~200 ms) from the TX monitor, at the cost of\n"
+                                  "monitoring the unprocessed microphone signal\n"
+                                  "(no equalizer, no filter, no ALC).\n\n"
+                                  "Default setting: OFF");
+      gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(ChkBtn), hl2_monitor_low_latency);
+      gtk_grid_attach(GTK_GRID(grid), ChkBtn, col, row, 1, 1);
+      g_signal_connect(ChkBtn, "toggled", G_CALLBACK(toggle_cb), &hl2_monitor_low_latency);
+      col++;
+    }
   }
   break;
   }

@@ -207,6 +207,19 @@ int atlas_janus = 0;
 // for a 10 MHz reference clock.
 //
 int hl2_audio_codec = 0;
+//
+// if hl2_monitor_to_hardware is set, the TX monitor audio is also sent to
+// the SDR hardware audio path (network port 1028 / AUDIO_FROM_HOST_PORT),
+// in addition to the local (host) audio backend. This allows the TX monitor
+// to be heard on the hardware's own headphones/codec output.
+//
+int hl2_monitor_to_hardware = 0;
+//
+// if hl2_monitor_low_latency is set, the TX monitor taps the raw microphone
+// sample in tx_add_mic_sample() instead of the block-based WDSP TX chain.
+// This removes the DSP block/pipeline delay (~200 ms) from the monitor.
+//
+int hl2_monitor_low_latency = 0;
 int hl2_cl1_input = 0;
 
 //
@@ -2834,6 +2847,8 @@ static void radio_restore_state(void) {
        (protocol != ORIGINAL_PROTOCOL || device != DEVICE_HERMES_LITE2))) {
     hl2_audio_codec = HL2_CODEC_OFF;
   }
+  GetPropI0("hl2_monitor_to_hardware",                       hl2_monitor_to_hardware);
+  GetPropI0("hl2_monitor_low_latency",                       hl2_monitor_low_latency);
   GetPropI0("hl2_cl1_input",                                 hl2_cl1_input)
   GetPropI0("anan10E",                                       anan10E);
   if (!(protocol == NEW_PROTOCOL && radio != NULL &&
@@ -3152,6 +3167,8 @@ void radio_save_state(void) {
   SetPropI0("atlas_mic_source",                              atlas_mic_source);
   SetPropI0("atlas_janus",                                   atlas_janus);
   SetPropI0("hl2_audio_codec",                               hl2_audio_codec);
+  SetPropI0("hl2_monitor_to_hardware",                       hl2_monitor_to_hardware);
+  SetPropI0("hl2_monitor_low_latency",                       hl2_monitor_low_latency);
   SetPropI0("hl2_cl1_input",                                 hl2_cl1_input)
   SetPropI0("anan10E",                                       anan10E);
   SetPropI0("hermes_mode",                                   hermes_mode);
