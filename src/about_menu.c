@@ -105,6 +105,8 @@ void about_menu(GtkWidget *parent) {
                                "for SDR-TRX running OpenHPSDR protocol P1 or P2\n\n"
                                "deskHPSDR is developed by Heiko Amft, DL1BZ (dl1bz@bzsax.de)\n"
                                "(contains code portions of pihpsdr until October 2024)\n"
+                               "This build: TecnoTalarn variant (github.com/TecnoTalarn/DeskHPSDR)\n"
+                               "Unofficial fork - not affiliated with the upstream project\n"
                                "Build OS: %s %s @ %s\n"
                                "Build compiler: %s\n"
                                "Git source: %s\n"
