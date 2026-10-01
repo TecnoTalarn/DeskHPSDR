@@ -94,11 +94,25 @@ endif
 endif
 
 # Get git commit version and date
+#
+# TecnoTalarn variant stamping: the build must always identify itself with the
+# TecnoTalarn fork, the exact date AND time of compilation, and the commit it
+# was built from. Upstream variables are kept for compatibility.
 GIT_DATE := $(shell git log -1 --format="%as")
 GIT_VERSION := $(shell git describe --abbrev=0 --tags --always)
 GIT_COMMIT := $(shell git log --pretty=format:"%h"  -1)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 GIT_REMOTE := $(shell git remote get-url origin)
+#
+# TecnoTalarn fork identification. TT_FORK is the canonical upstream this
+# build derives from; TT_BUILD_STAMP is the exact compilation date and time.
+TT_FORK := TecnoTalarn/DeskHPSDR
+TT_BUILD_STAMP := $(shell date +"%Y-%m-%d %H:%M:%S %Z")
+TT_BUILD_EPOCH := $(shell date +"%s")
+#
+# Full version string shown in About / logs: upstream tag + fork + commit + stamp.
+TT_BUILD_VERSION := $(GIT_VERSION)-tt[$(GIT_COMMIT)]
+TT_BUILD_DATE := $(TT_BUILD_STAMP)
 
 #
 # Compile with warning level set to maximum. Note the check against "unintendend" fallthroughs
@@ -615,7 +629,12 @@ OPTIONS=$(MIDI_OPTIONS) $(USBOZY_OPTIONS) \
 	-DGIT_VERSION='"$(GIT_VERSION)"' \
 	-DGIT_COMMIT='"$(GIT_COMMIT)"' \
 	-DGIT_BRANCH='"$(GIT_BRANCH)"' \
-	-DGIT_REMOTE='"$(GIT_REMOTE)"'
+	-DGIT_REMOTE='"$(GIT_REMOTE)"' \
+	-DTT_FORK='"$(TT_FORK)"' \
+	-DTT_BUILD_STAMP='"$(TT_BUILD_STAMP)"' \
+	-DTT_BUILD_EPOCH='"$(TT_BUILD_EPOCH)"' \
+	-DTT_BUILD_VERSION='"$(TT_BUILD_VERSION)"' \
+	-DTT_BUILD_DATE='"$(TT_BUILD_DATE)"'
 
 INCLUDES=$(GTK_INCLUDE) $(WDSP_INCLUDE) $(SOLAR_INCLUDE) $(TELNET_INCLUDE) $(AUDIO_INCLUDE) $(STEMLAB_INCLUDE) $(TCI_INCLUDE) $(JSON_INCLUDE) $(MIDI_INCLUDE)
 COMPILE=$(CC) $(CFLAGS) $(OPTIONS) $(EXTRA_CFLAGS) $(INCLUDES)

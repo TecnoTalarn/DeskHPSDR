@@ -24,6 +24,16 @@ char build_version[] = GIT_VERSION;
 char build_commit[] = GIT_COMMIT;
 char build_branch[] = GIT_BRANCH;
 char build_remote[] = GIT_REMOTE;
+//
+// TecnoTalarn fork identification. These are stamped at compile time by the
+// Makefile so that every build of this variant can be told apart from
+// upstream, and so the exact compile date/time is always recorded.
+//
+char tt_fork[] = TT_FORK;
+char tt_build_stamp[] = TT_BUILD_STAMP;
+char tt_build_epoch[] = TT_BUILD_EPOCH;
+char tt_build_version[] = TT_BUILD_VERSION;
+char tt_build_date[] = TT_BUILD_DATE;
 
 char build_options[] =
 #ifdef MIDI

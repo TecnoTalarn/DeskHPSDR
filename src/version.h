@@ -29,5 +29,13 @@ extern char build_branch[];
 extern char build_options[];
 extern char build_audio[];
 extern char build_remote[];
+//
+// TecnoTalarn fork identification, stamped at compile time.
+//
+extern char tt_fork[];
+extern char tt_build_stamp[];
+extern char tt_build_epoch[];
+extern char tt_build_version[];
+extern char tt_build_date[];
 
 #endif

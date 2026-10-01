@@ -1040,6 +1040,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "deskHPSDR version %s [%s] (branch %s - commit %s), built date %s with %s\n", build_version,
             unameData.machine,
             build_branch, build_commit, build_date, __VERSION__);
+    fprintf(stderr, "TecnoTalarn fork           : %s\n", tt_fork);
+    fprintf(stderr, "TecnoTalarn build          : %s [%s]\n", tt_build_version, tt_build_stamp);
     fprintf(stderr, "Compile-time options      : %sAudioModule=%s\n", build_options, build_audio);
 #ifdef SATURN
     fprintf(stderr, "SATURN min:max minor FPGA : %d:%d\n", saturn_minor_version_min(), saturn_minor_version_max());
