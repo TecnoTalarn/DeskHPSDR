@@ -95,7 +95,7 @@ endif
 
 # Get git commit version and date
 GIT_DATE := $(shell git log -1 --format="%as")
-GIT_VERSION := $(shell git describe --abbrev=0 --tags --always)
+GIT_VERSION := 1.0.0-tt
 GIT_COMMIT := $(shell git log --pretty=format:"%h"  -1)
 GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD 2>/dev/null)
 GIT_REMOTE := $(shell git remote get-url origin)

@@ -1530,12 +1530,58 @@ static void rx_process_buffer(RECEIVER *rx) {
       audio_write(rx, (float) left_sample, (float) right_sample);
     }
     if (rx == active_receiver) {
+      //
+      // The SDR audio ring accepts exactly ONE producer at the RX sample
+      // rate.  If a second receiver is also routed to the computer audio
+      // output, mix its samples into this single stream instead of feeding
+      // a second producer into the ring (which would overflow it and drop
+      // samples -> distortion).
+      //
+      int sdr_left  = (int) left_audio_sample;
+      int sdr_right = (int) right_audio_sample;
+      for (int r = 0; r < RECEIVERS; r++) {
+        RECEIVER *other = receiver[r];
+        if (other == NULL || other == rx) { continue; }
+        if (!other->local_audio) { continue; }
+        if (g_mutex_trylock(&other->mutex)) {
+          double ol = other->audio_output_buffer[i * 2];
+          double or_ = other->audio_output_buffer[(i * 2) + 1];
+          g_mutex_unlock(&other->mutex);
+          //
+          // Apply the other receiver's own channel selection, exactly as the
+          // active receiver's samples already had it applied above.
+          //
+          switch (other->audio_channel) {
+          case LEFT:
+            or_ = 0.0;
+            break;
+          case RIGHT:
+            ol = 0.0;
+            break;
+          case STEREO:
+          default:
+            break;
+          }
+          if (ol >  1.0) { ol =  1.0; }
+          if (ol < -1.0) { ol = -1.0; }
+          if (or_ >  1.0) { or_ =  1.0; }
+          if (or_ < -1.0) { or_ = -1.0; }
+          sdr_left  += (int)(ol  * 32767.0);
+          sdr_right += (int)(or_ * 32767.0);
+        }
+      }
+      if (sdr_left  >  32767) { sdr_left  =  32767; }
+      if (sdr_left  < -32768) { sdr_left  = -32768; }
+      if (sdr_right >  32767) { sdr_right =  32767; }
+      if (sdr_right < -32768) { sdr_right = -32768; }
+      short sdr_left_sample  = (short) sdr_left;
+      short sdr_right_sample = (short) sdr_right;
       switch (protocol) {
       case ORIGINAL_PROTOCOL:
-        old_protocol_audio_samples(left_audio_sample, right_audio_sample);
+        old_protocol_audio_samples(sdr_left_sample, sdr_right_sample);
         break;
       case NEW_PROTOCOL:
-        new_protocol_audio_samples(left_audio_sample, right_audio_sample);
+        new_protocol_audio_samples(sdr_left_sample, sdr_right_sample);
         break;
       }
     }
